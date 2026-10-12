@@ -1,4 +1,4 @@
-package org.example.model;
+package org.bot.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,24 +9,41 @@ public class ChatThread {
     private final String id;
     private final List<ChatMessage> messages;
 
-    public ChatThread() {
-        this.id = UUID.randomUUID().toString();
+    public ChatThread()
+    {
+        this(UUID.randomUUID().toString());
+    }
+
+    public ChatThread(String id)
+    {
+        this.id = id;
         this.messages = new ArrayList<>();
     }
 
-    public void addMessage(String senderAlias, String text) {
+    public static ChatThread fromMessages(String id, List<ChatMessage> messages)
+    {
+        ChatThread thread = new ChatThread(id);
+        thread.messages.addAll(messages);
+        return thread;
+    }
+
+    public void addMessage(String senderAlias, String text)
+    {
         messages.add(new ChatMessage(senderAlias, text));
     }
 
-    public List<ChatMessage> getMessages() {
+    public List<ChatMessage> getMessages()
+    {
         return Collections.unmodifiableList(messages);
     }
 
-    public String getId() {
+    public String getId()
+    {
         return id;
     }
 
-    public String getFormattedHistory() {
+    public String getFormattedHistory()
+    {
         StringBuilder sb = new StringBuilder();
         sb.append("--- История анонимного чата (Сообщений: ").append(messages.size()).append(") ---\n");
         for (int i = 0; i < messages.size(); i++) {

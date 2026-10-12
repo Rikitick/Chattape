@@ -1,11 +1,13 @@
-package org.example;
+package org.bot;
 
-import org.example.logic.RouletteBotLogic;
-import org.example.repository.ChatRepository;
-import org.example.ui.ConsoleInterface;
+import org.bot.model.ChatRepository;
+import org.bot.view.RouletteBotLogic;
+import org.bot.controller.ConsoleInterface;
 
-public class Main {
-    public static void main(String[] args) {
+public class Main
+{
+    public static void main(String[] args)
+    {
         ChatRepository repository = new ChatRepository();
         RouletteBotLogic botLogic = new RouletteBotLogic(repository);
         ConsoleInterface consoleUI = new ConsoleInterface(botLogic);

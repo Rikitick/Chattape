@@ -1,17 +1,20 @@
-package org.example.logic;
+package org.bot.view;
 
-import org.example.model.ChatThread;
-import org.example.repository.ChatRepository;
+import org.bot.model.ChatThread;
+import org.bot.model.ChatRepository;
 
-public class RouletteBotLogic {
+public class RouletteBotLogic
+{
     private final ChatRepository repository;
     private ChatThread currentThread;
 
-    public RouletteBotLogic(ChatRepository repository) {
+    public RouletteBotLogic(ChatRepository repository)
+    {
         this.repository = repository;
     }
 
-    public String getGreeting() {
+    public String getGreeting()
+    {
         return """
                === Анонимная Чат-Рулетка (Chain Chat) ===
                Вы получаете случайное сообщение от незнакомца.
@@ -24,7 +27,8 @@ public class RouletteBotLogic {
                """;
     }
 
-    public String getHelp() {
+    public String getHelp()
+    {
         return """
                --- Справка ---
                - Введите любой текст, чтобы ответить на текущее сообщение и отправить чат дальше.
@@ -34,39 +38,48 @@ public class RouletteBotLogic {
                """;
     }
 
-    public String loadNextThread() {
+    public String loadNextThread()
+    {
         this.currentThread = repository.getRandomThread();
-        if (this.currentThread == null) {
+        if (this.currentThread == null)
+        {
             this.currentThread = new ChatThread();
             return "Анонимных чатов пока нет. Напишите сообщение, чтобы начать новую цепочку!";
         }
         return "Вам пришел анонимный чат!\n" + currentThread.getFormattedHistory() + "\nВведите ваш ответ:";
     }
 
-    public String handleInput(String input) {
-        if (input == null || input.isBlank()) {
+    public String handleInput(String input)
+    {
+        if (input == null || input.isBlank())
+        {
             return "Сообщение не может быть пустым.";
         }
 
         String trimmed = input.trim();
 
-        if (trimmed.equalsIgnoreCase("\\help")) {
+        if (trimmed.equalsIgnoreCase("\\help"))
+        {
             return getHelp();
         }
 
-        if (trimmed.equalsIgnoreCase("\\new")) {
+        if (trimmed.equalsIgnoreCase("\\new"))
+        {
             this.currentThread = new ChatThread();
             return "Создан новый чат. Напишите первое сообщение:";
         }
 
-        if (trimmed.equalsIgnoreCase("\\skip")) {
-            if (this.currentThread != null && !this.currentThread.getMessages().isEmpty()) {
+        if (trimmed.equalsIgnoreCase("\\skip"))
+        {
+            if (this.currentThread != null && !this.currentThread.getMessages().isEmpty())
+            {
                 repository.saveThread(this.currentThread);
             }
             return loadNextThread();
         }
 
-        if (this.currentThread == null) {
+        if (this.currentThread == null)
+        {
             this.currentThread = new ChatThread();
         }
 

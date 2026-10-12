@@ -1,26 +1,30 @@
-package org.example.ui;
+package org.bot.controller;
 
-import org.example.logic.RouletteBotLogic;
+import org.bot.view.RouletteBotLogic;
 import java.util.Scanner;
 
 public class ConsoleInterface {
     private final RouletteBotLogic botLogic;
     private final Scanner scanner;
 
-    public ConsoleInterface(RouletteBotLogic botLogic) {
+    public ConsoleInterface(RouletteBotLogic botLogic)
+    {
         this.botLogic = botLogic;
         this.scanner = new Scanner(System.in);
     }
 
-    public void start() {
+    public void start()
+    {
         System.out.println(botLogic.getGreeting());
         System.out.println(botLogic.loadNextThread());
 
-        while (true) {
+        while (true)
+        {
             System.out.print("\n> ");
             String input = scanner.nextLine();
 
-            if ("\\exit".equalsIgnoreCase(input.trim())) {
+            if ("\\exit".equalsIgnoreCase(input.trim()))
+            {
                 System.out.println("Вышли из чат-рулетки. До встречи!");
                 break;
             }
@@ -29,4 +33,6 @@ public class ConsoleInterface {
             System.out.println(response);
         }
     }
+
+    
 }
