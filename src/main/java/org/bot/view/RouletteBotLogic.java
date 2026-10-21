@@ -1,93 +1,104 @@
 package org.bot.view;
 
 import org.bot.model.ChatThread;
-import org.bot.model.ChatRepository;
+import org.bot.repository.ChatRepository;
+import java.util.List;
 
-public class RouletteBotLogic
-{
+public class RouletteBotLogic {
     private final ChatRepository repository;
     private ChatThread currentThread;
 
-    public RouletteBotLogic(ChatRepository repository)
-    {
+    public RouletteBotLogic(ChatRepository repository) {
         this.repository = repository;
     }
 
-    public String getGreeting()
-    {
+    public String getGreeting() {
         return """
-               === Анонимная Чат-Рулетка (Chain Chat) ===
+               === Анонимная Чат-Рулетка (Story Chain) ===
                Вы получаете случайное сообщение от незнакомца.
-               Напишите ответ, и вся история чата отправится СЛЕДУЮЩЕМУ случайному человеку!
+               Напишите ответ, и вся история чата отправится СЛЕДУЮЩЕМУ человек!
 
                Команды:
-               \\help - Инструкции
-               \\new  - Начать новую цепочку сообщений
-               \\skip - Пропустить текущий чат и получить другой
+               \\help    - Инструкции
+               \\new     - Начать новую цепочку сообщений
+               \\skip    - Пропустить текущий чат и получить другой
+               \\history - Посмотреть истории ваших чатов
                """;
     }
 
-    public String getHelp()
-    {
+    public String getHelp() {
         return """
                --- Справка ---
-               - Введите любой текст, чтобы ответить на текущее сообщение и отправить чат дальше.
-               - \\new  - Создать совершенно новый чат и написать первое сообщение.
-               - \\skip - Сбросить текущую цепочку и взять новую из пула.
-               - \\exit - Выйти из программы.
+               - Введите любой текст, чтобы ответить на текущее сообщение.
+               - \\new     - Создать совершенно новый чат.
+               - \\skip    - Взять другой чат из пула.
+               - \\history - Посмотреть все истории, в которых вы участвовали.
+               - \\exit    - Выйти из программы.
                """;
     }
 
-    public String loadNextThread()
-    {
-        this.currentThread = repository.getRandomThread();
-        if (this.currentThread == null)
-        {
+    public String loadNextThread(String userId) {
+        this.currentThread = repository.findAvailableThreadForUser(userId);
+        if (this.currentThread == null) {
             this.currentThread = new ChatThread();
-            return "Анонимных чатов пока нет. Напишите сообщение, чтобы начать новую цепочку!";
+            return "Свободных анонимных чатов нет. Напишите сообщение, чтобы начать новую цепочку!";
         }
         return "Вам пришел анонимный чат!\n" + currentThread.getFormattedHistory() + "\nВведите ваш ответ:";
     }
 
-    public String handleInput(String input)
-    {
-        if (input == null || input.isBlank())
-        {
+    public String handleInput(String input, String userId) {
+        if (input == null || input.isBlank()) {
             return "Сообщение не может быть пустым.";
         }
 
         String trimmed = input.trim();
 
-        if (trimmed.equalsIgnoreCase("\\help"))
-        {
+        if (trimmed.equalsIgnoreCase("\\help")) {
             return getHelp();
         }
 
-        if (trimmed.equalsIgnoreCase("\\new"))
-        {
+        if (trimmed.equalsIgnoreCase("\\history")) {
+            return getUserHistory(userId);
+        }
+
+        if (trimmed.equalsIgnoreCase("\\new")) {
             this.currentThread = new ChatThread();
             return "Создан новый чат. Напишите первое сообщение:";
         }
 
-        if (trimmed.equalsIgnoreCase("\\skip"))
-        {
-            if (this.currentThread != null && !this.currentThread.getMessages().isEmpty())
-            {
+        if (trimmed.equalsIgnoreCase("\\skip")) {
+            if (this.currentThread != null && !this.currentThread.getMessages().isEmpty()) {
                 repository.saveThread(this.currentThread);
             }
-            return loadNextThread();
+            return loadNextThread(userId);
         }
 
-        if (this.currentThread == null)
-        {
+        if (this.currentThread == null) {
             this.currentThread = new ChatThread();
         }
 
-        this.currentThread.addMessage("Вы (Аноним)", trimmed);
+        boolean added = this.currentThread.addMessage(userId, trimmed);
+        if (!added) {
+            return "Вы не можете отправить сообщение в этот чат (возможно, вы писали последним или чат завершен).";
+        }
 
         repository.saveThread(this.currentThread);
         this.currentThread = null;
 
-        return "Ваше сообщение отправлено в эстафету случайному человеку!\n\n" + loadNextThread();
+        return "Ваше сообщение отправлено в эстафету!\n\n" + loadNextThread(userId);
+    }
+
+    private String getUserHistory(String userId) {
+        List<ChatThread> history = repository.findThreadsByParticipant(userId);
+        if (history.isEmpty()) {
+            return "У вас пока нет сохранённых историй.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Ваши истории (всего: ").append(history.size()).append(") ===\n\n");
+        for (ChatThread thread : history) {
+            sb.append(thread.getFormattedHistory()).append("\n");
+        }
+        return sb.toString();
     }
 }

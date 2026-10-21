@@ -1,6 +1,6 @@
 package org.bot.view;
 
-import org.bot.model.ChatRepository;
+import org.bot.repository.H2ChatRepository;
 import org.bot.model.ChatThread;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class RouletteBotLogicTest
 {
     private RouletteBotLogic botLogic;
-    private ChatRepository repository;
+    private H2ChatRepository repository;
 
     @BeforeEach
     void setUp()
     {
-        repository = new ChatRepository();
+        repository = new H2ChatRepository();
         botLogic = new RouletteBotLogic(repository);
     }
 
@@ -58,7 +58,7 @@ class RouletteBotLogicTest
         repository.saveThread(thread);
 
         int savedCount = repository.getActiveCount();
-        ChatRepository anotherRepository = new ChatRepository();
+        H2ChatRepository anotherRepository = new H2ChatRepository();
 
         assertEquals(savedCount, anotherRepository.getActiveCount());
     }
