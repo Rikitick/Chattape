@@ -2,4 +2,4 @@
 .gitignore
 *.class
 target/
-chattape.mv.db
+*.db

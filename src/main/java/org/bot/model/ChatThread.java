@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+// ВЫНЕСТИ
 public class ChatThread {
     private final String id;
     private final List<ChatMessage> messages;

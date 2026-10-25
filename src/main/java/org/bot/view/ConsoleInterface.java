@@ -1,9 +1,11 @@
-package org.bot.controller;
+package org.bot.view;
 
-import org.bot.view.RouletteBotLogic;
+import org.bot.controller.RouletteBotLogic;
+
 import java.util.Scanner;
 
-public class ConsoleInterface {
+public class ConsoleInterface
+{
     private final RouletteBotLogic botLogic;
     private final Scanner scanner;
 
@@ -17,10 +19,10 @@ public class ConsoleInterface {
     {
         System.out.println(botLogic.getGreeting());
         System.out.println(botLogic.loadNextThread());
-
+        System.out.print("\n");
         while (true)
         {
-            System.out.print("\n> ");
+            System.out.print("> ");
             String input = scanner.nextLine();
 
             if ("\\exit".equalsIgnoreCase(input.trim()))
@@ -29,10 +31,12 @@ public class ConsoleInterface {
                 break;
             }
 
+            if (input.trim().isEmpty())
+            {
+                continue;
+            }
             String response = botLogic.handleInput(input);
             System.out.println(response);
         }
     }
-
-    
 }
