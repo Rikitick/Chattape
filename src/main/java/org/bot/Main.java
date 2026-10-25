@@ -1,19 +1,34 @@
 package org.bot;
 
-import org.bot.controller.RouletteBotLogic;
-import org.bot.db.SqliteChatRepository;
-import org.bot.model.ChatRepository;
-import org.bot.view.ConsoleInterface;
+import org.bot.controller.ConsoleInterface;
+import org.bot.model.DataBase;
+import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
+
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class Main
 {
     public static void main(String[] args)
     {
-        try (ChatRepository repository = new SqliteChatRepository())
+        Dotenv dotenv = Dotenv.load();
+        String botToken = dotenv.get("TELEGRAM_BOT_TOKEN");
+        if (botToken == null || botToken.isEmpty()) {
+            System.err.println("Ошибка: TELEGRAM_BOT_TOKEN не найден в .env файле!");
+            System.exit(1);
+        }
+
+        var dataBase = new DataBase();
+        var controller = new ConsoleInterface(dataBase, botToken);
+        
+        try (TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication())
         {
-            RouletteBotLogic botLogic = new RouletteBotLogic(repository);
-            ConsoleInterface consoleUI = new ConsoleInterface(botLogic);
-            consoleUI.start();
+            botsApplication.registerBot(botToken, controller);
+            Thread.currentThread().join();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 }

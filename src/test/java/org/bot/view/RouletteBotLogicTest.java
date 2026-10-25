@@ -1,9 +1,8 @@
 package org.bot.view;
 
-import org.bot.controller.RouletteBotLogic;
-import org.bot.db.SqliteChatRepository;
 import org.bot.model.ChatRepository;
 import org.bot.model.ChatThread;
+import org.bot.model.SqliteChatRepository;
 import org.bot.repository.ChatRepository;
 import org.bot.repository.H2ChatRepository;
 import org.junit.jupiter.api.BeforeEach;
