@@ -12,7 +12,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ORM implements DataBaseInterface
+public class ORM implements DataBaseInterface, AutoCloseable
 {
     private static final String DEFAULT_URL = "jdbc:sqlite:./chattape.db";
     private final Connection connection;
@@ -57,6 +57,8 @@ public class ORM implements DataBaseInterface
                             "SELECT DISTINCT chat_id FROM messages WHERE chat_id > 0"
             );
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id)");
+            // индекс по user_id пригодится для getUserChats / getRandomChat
+            statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)");
         }
     }
 
@@ -84,18 +86,21 @@ public class ORM implements DataBaseInterface
     @Override
     public List<Message> getRandomChat(long user_id)
     {
+        // Добавлено: latest.chat_id NOT IN (чаты, где user_id уже писал)
         String sql = "SELECT rowid AS id, chat_id, user_id, name_sender, text " +
-                     "FROM messages WHERE chat_id = (" +
-                     "SELECT latest.chat_id FROM messages AS latest " +
-                     "WHERE latest.rowid = (SELECT MAX(newer.rowid) FROM messages AS newer " +
-                     "WHERE newer.chat_id = latest.chat_id) " +
-                     "AND latest.user_id <> ? " +
-                     "ORDER BY RANDOM() LIMIT 1) ORDER BY rowid ASC";
+                "FROM messages WHERE chat_id = (" +
+                "SELECT latest.chat_id FROM messages AS latest " +
+                "WHERE latest.rowid = (SELECT MAX(newer.rowid) FROM messages AS newer " +
+                "WHERE newer.chat_id = latest.chat_id) " +
+                "AND latest.user_id <> ? " +
+                "AND latest.chat_id NOT IN (SELECT chat_id FROM messages WHERE user_id = ?) " +
+                "ORDER BY RANDOM() LIMIT 1) ORDER BY rowid ASC";
         List<Message> messages = new ArrayList<>();
 
         try (PreparedStatement statement = connection.prepareStatement(sql))
         {
             statement.setLong(1, user_id);
+            statement.setLong(2, user_id);
             try (ResultSet rs = statement.executeQuery())
             {
                 while (rs.next()) {
@@ -121,11 +126,10 @@ public class ORM implements DataBaseInterface
     public synchronized void addMessage(Message message)
     {
         String sql = "INSERT INTO messages (chat_id, user_id, name_sender, text) " +
-                     "VALUES (?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql))
         {
-
             pstmt.setInt(1, message.getChatId());
             pstmt.setLong(2, message.getUserId());
             pstmt.setString(3, message.getNameSender());
@@ -136,6 +140,87 @@ public class ORM implements DataBaseInterface
         catch (SQLException e)
         {
             throw new IllegalStateException("Не удалось сохранить сообщение в базе данных", e);
+        }
+    }
+
+    @Override
+    public int getChatSize(int chatId)
+    {
+        String sql = "SELECT COUNT(*) FROM messages WHERE chat_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql))
+        {
+            ps.setInt(1, chatId);
+            try (ResultSet rs = ps.executeQuery())
+            {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new IllegalStateException("Не удалось получить размер чата", e);
+        }
+    }
+
+    @Override
+    public List<Integer> getUserChats(long userId)
+    {
+        String sql = "SELECT DISTINCT chat_id FROM messages WHERE user_id = ? ORDER BY chat_id";
+        List<Integer> result = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql))
+        {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery())
+            {
+                while (rs.next()) result.add(rs.getInt(1));
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new IllegalStateException("Не удалось получить чаты пользователя", e);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Message> getChatById(int chatId)
+    {
+        String sql = "SELECT rowid AS id, chat_id, user_id, name_sender, text " +
+                "FROM messages WHERE chat_id = ? ORDER BY rowid ASC";
+        List<Message> messages = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql))
+        {
+            ps.setInt(1, chatId);
+            try (ResultSet rs = ps.executeQuery())
+            {
+                while (rs.next())
+                {
+                    messages.add(new Message(
+                            rs.getInt("id"),
+                            rs.getInt("chat_id"),
+                            rs.getLong("user_id"),
+                            rs.getString("name_sender"),
+                            rs.getString("text")
+                    ));
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new IllegalStateException("Не удалось получить чат по id", e);
+        }
+        return messages;
+    }
+
+    @Override
+    public synchronized void close()
+    {
+        try
+        {
+            connection.close();
+        }
+        catch (SQLException e)
+        {
+            throw new IllegalStateException("Не удалось закрыть соединение с базой данных", e);
         }
     }
 }

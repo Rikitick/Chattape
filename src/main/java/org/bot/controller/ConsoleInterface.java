@@ -1,7 +1,7 @@
 package org.bot.controller;
 
-import org.bot.model.DataBase;
-import org.bot.view.Handlers;
+import org.bot.model.interfaces.DataBaseInterface;
+import org.bot.Handlers;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,16 +16,21 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ConsoleInterface implements LongPollingSingleThreadUpdateConsumer
 {
-    private final DataBase dataBase;
+    private static final int MAX_CHAT_SIZE = 10;
+
+    private final DataBaseInterface dataBase;
     private final Handlers handlers;
     private final TelegramClient telegramClient;
     private final ConcurrentMap<Long, Integer> activeChats = new ConcurrentHashMap<>();
 
-    public ConsoleInterface(DataBase dataBase, String botToken) {
-        
+    public ConsoleInterface(DataBaseInterface dataBase, String botToken) {
+        this(dataBase, new OkHttpTelegramClient(botToken));
+    }
+
+    public ConsoleInterface(DataBaseInterface dataBase, TelegramClient telegramClient) {
         this.dataBase = dataBase;
         this.handlers = new Handlers();
-        this.telegramClient = new OkHttpTelegramClient(botToken);
+        this.telegramClient = telegramClient;
     }
 
     @Override
@@ -42,22 +47,30 @@ public class ConsoleInterface implements LongPollingSingleThreadUpdateConsumer
         long userId = incoming.getFrom().getId();
         String response;
 
-        if (messageText == "/start")
+        if (messageText.equals("/start"))
         {
             response = handlers.StartMessage() + "\n" + loadRandomChat(userId);
         }
-        else if (messageText == "/help")
+        else if (messageText.equals("/help"))
         {
             response = handlers.HelpMessage();
         }
-        else if (messageText == "/new")
+        else if (messageText.equals("/new"))
         {
             activeChats.put(userId, dataBase.createChat());
             response = handlers.NewChat();
         }
-        else if (messageText == "/skip")
+        else if (messageText.equals("/skip"))
         {
             response = handlers.SkipChat() + "\n" + loadRandomChat(userId);
+        }
+        else if (messageText.equals("/my"))
+        {
+            response = listUserChats(userId);
+        }
+        else if (messageText.startsWith("/open "))
+        {
+            response = openChat(userId, messageText.substring("/open ".length()).trim());
         }
         else if (messageText.startsWith("/"))
         {
@@ -72,14 +85,24 @@ public class ConsoleInterface implements LongPollingSingleThreadUpdateConsumer
             else
             {
                 int chatId = activeChats.get(userId);
-                dataBase.saveNewMessage(new Message(
-                        0,
-                        chatId,
-                        userId,
-                        getSenderName(incoming.getFrom()),
-                        messageText
-                ));
-                response = "Сообщение сохранено.";
+                if (dataBase.getChatSize(chatId) >= MAX_CHAT_SIZE)
+                {
+                    activeChats.remove(userId);
+                    response = handlers.ChatFull();
+                }
+                else
+                {
+                    dataBase.addMessage(new Message(
+                            0,
+                            chatId,
+                            userId,
+                            getSenderName(incoming.getFrom()),
+                            messageText
+                    ));
+                    // одно сообщение — чат уходит из активных
+                    activeChats.remove(userId);
+                    response = "Сообщение сохранено.\n\n" + renderChat(dataBase.getChatById(chatId));
+                }
             }
         }
 
@@ -107,12 +130,59 @@ public class ConsoleInterface implements LongPollingSingleThreadUpdateConsumer
         }
 
         activeChats.put(userId, messages.get(0).getChatId());
-        StringBuilder history = new StringBuilder();
-        for (Message message : messages)
+        return renderChat(messages);
+    }
+
+    private String listUserChats(long userId)
+    {
+        List<Integer> chats = dataBase.getUserChats(userId);
+        if (chats.isEmpty())
         {
-            history.append(message.getMessage()).append('\n');
+            return handlers.MyChatsEmpty();
         }
-        return history.toString().trim();
+        StringBuilder sb = new StringBuilder(handlers.MyChatsHeader());
+        for (int id : chats)
+        {
+            sb.append("\n  /open ").append(id);
+        }
+        return sb.toString();
+    }
+
+    private String openChat(long userId, String arg)
+    {
+        int chatId;
+        try
+        {
+            chatId = Integer.parseInt(arg);
+        }
+        catch (NumberFormatException e)
+        {
+            return handlers.OpenUsage();
+        }
+
+        List<Message> chat = dataBase.getChatById(chatId);
+        if (chat.isEmpty())
+        {
+            return handlers.ChatNotFound();
+        }
+
+        boolean participated = chat.stream().anyMatch(m -> m.getUserId() == userId);
+        if (!participated)
+        {
+            return handlers.NotParticipated();
+        }
+
+        return renderChat(chat);
+    }
+
+    private String renderChat(List<Message> chat)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (Message m : chat)
+        {
+            sb.append(m.getMessage()).append('\n');
+        }
+        return sb.toString().trim();
     }
 
     private String getSenderName(org.telegram.telegrambots.meta.api.objects.User user)
