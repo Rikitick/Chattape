@@ -38,6 +38,7 @@ public class Main
         return botToken != null && !botToken.isEmpty();
     }
 
+
     static ConsoleInterface createController(DataBaseInterface dataBase, String botToken)
     {
         return new ConsoleInterface(dataBase, botToken);
