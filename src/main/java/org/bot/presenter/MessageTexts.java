@@ -1,9 +1,12 @@
-package org.bot;
+package org.bot.presenter;
 
-public class Handlers
-{
-    public String StartMessage()
-    {
+/**
+ * Централизованные тексты сообщений для пользователя.
+ * Добавлено: замена старого класса Handlers.
+ */
+public class MessageTexts {
+
+    public String startMessage() {
         return """
                === Анонимная Чат-Рулетка (Chain Chat) ===
                Вы получаете случайное сообщение от незнакомца.
@@ -17,8 +20,7 @@ public class Handlers
                """;
     }
 
-    public String HelpMessage()
-    {
+    public String helpMessage() {
         return """
                --- Справка ---
                - Введите любой текст, чтобы ответить на текущее сообщение и отправить чат дальше
@@ -32,47 +34,51 @@ public class Handlers
                """;
     }
 
-    public String NewChat()
-    {
-        return """
-                Вы создали новый чат. Отправьте первое сообщение!
-                """;
+    public String newChat() {
+        return "Вы создали новый чат. Отправьте первое сообщение!";
     }
 
-    public String SkipChat()
-    {
-        return """
-                скипаем...
-                """;
+    public String skipChat() {
+        return "скипаем...";
     }
 
-    public String MyChatsEmpty()
-    {
+    public String myChatsEmpty() {
         return "У вас пока нет чатов. Начните новый с помощью /new или получите чужой через /start.";
     }
 
-    public String MyChatsHeader()
-    {
+    public String myChatsHeader() {
         return "Ваши чаты (откройте командой /open <id>):";
     }
 
-    public String ChatFull()
-    {
+    public String chatFull() {
         return "Этот чат уже заполнен (10 сообщений). Начните новый: /new.";
     }
 
-    public String ChatNotFound()
-    {
+    public String chatNotFound() {
         return "Чат не найден или в нём нет сообщений.";
     }
 
-    public String NotParticipated()
-    {
+    public String notParticipated() {
         return "Вы не участвовали в этом чате, просмотр недоступен.";
     }
 
-    public String OpenUsage()
-    {
+    public String openUsage() {
         return "Использование: /open <id>";
+    }
+
+    public String unknownCommand() {
+        return "Неизвестная команда. Используйте /help.";
+    }
+
+    public String noActiveChat() {
+        return "Пока что нет чатов для вас, но вы можете начать новый с помощью /new";
+    }
+
+    public String noChatsAvailable() {
+        return "Пока нет доступных чатов, но вы можете начать новый с помощью /new";
+    }
+
+    public String messageSaved() {
+        return "Сообщение сохранено.";
     }
 }

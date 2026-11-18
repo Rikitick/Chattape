@@ -20,6 +20,19 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.46.1.0</version>
         </dependency>
+
+        <!-- Hibernate ORM -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>6.4.4.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+            <version>6.4.4.Final</version>
+        </dependency>
+
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
